@@ -38,6 +38,7 @@ object PandemicCities {
         City("New Mumbai", CityColor.BLACK),
         City("New York", CityColor.BLUE),
         City("Paris", CityColor.BLUE),
+        City("Riyadh", CityColor.BLACK),
         City("San Francisco", CityColor.BLUE),
         City("Santiago", CityColor.YELLOW),
         City("São Paulo", CityColor.YELLOW),

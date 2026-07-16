@@ -527,18 +527,22 @@ fun CardSelectionDialog(
             }
         },
         confirmButton = {
-            TextButton(
-                onClick = { onConfirm(selectedCities) },
-                enabled = selectedCities.isNotEmpty()
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.Center
             ) {
-                Text("Confirm")
+                TextButton(onClick = onDismiss) {
+                    Text("Cancel")
+                }
+                TextButton(
+                    onClick = { onConfirm(selectedCities) },
+                    enabled = selectedCities.isNotEmpty()
+                ) {
+                    Text("Confirm")
+                }
             }
         },
-        dismissButton = {
-            TextButton(onClick = onDismiss) {
-                Text("Cancel")
-            }
-        }
+        dismissButton = null
     )
 }
 
