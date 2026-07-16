@@ -166,13 +166,18 @@ fun App() {
 
         if (dialogMode != DialogMode.NONE) {
             CardSelectionDialog(
+                multiSelect = dialogMode == DialogMode.DRAW,
                 onDismiss = { dialogMode = DialogMode.NONE },
-                onConfirm = { cityName ->
-                    gameState = when (dialogMode) {
-                        DialogMode.EPIDEMIC -> gameState.epidemicEvent(cityName)
-                        DialogMode.DRAW -> gameState.recordDraw(cityName)
-                        else -> gameState
+                onConfirm = { cityNames ->
+                    var currentGameState = gameState
+                    cityNames.forEach { cityName ->
+                        currentGameState = when (dialogMode) {
+                            DialogMode.EPIDEMIC -> currentGameState.epidemicEvent(cityName)
+                            DialogMode.DRAW -> currentGameState.recordDraw(cityName)
+                            else -> currentGameState
+                        }
                     }
+                    gameState = currentGameState
                     dialogMode = DialogMode.NONE
                 }
             )
@@ -351,10 +356,11 @@ private fun InstanceCard(
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun CardSelectionDialog(
+    multiSelect: Boolean,
     onDismiss: () -> Unit,
-    onConfirm: (String) -> Unit
+    onConfirm: (List<String>) -> Unit
 ) {
-    var selectedCity by remember { mutableStateOf<String?>(null) }
+    var selectedCities by remember { mutableStateOf(emptySet<String>()) }
     val groupedCities = remember {
         PandemicCities.all.groupBy { it.color }
     }
@@ -363,7 +369,7 @@ fun CardSelectionDialog(
         onDismissRequest = onDismiss,
         title = {
             Text (
-                text = "Select Card",
+                text = if (multiSelect) "Select Cards" else "Select Card",
                 modifier = Modifier.fillMaxWidth(),
                 textAlign = TextAlign.Center
             )
@@ -376,11 +382,18 @@ fun CardSelectionDialog(
                 ) {
                     groupedCities.forEach { (color, cities) ->
                         items(cities, key = { it.name }) { city ->
-                            val selected = selectedCity == city.name
+                            val selected = selectedCities.contains(city.name)
                             Card(
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .clickable { selectedCity = city.name },
+                                    .clickable {
+                                        selectedCities = if (multiSelect) {
+                                            if (selected) selectedCities - city.name
+                                            else selectedCities + city.name
+                                        } else {
+                                            setOf(city.name)
+                                        }
+                                    },
                                 colors = CardDefaults.cardColors(
                                     containerColor = if (selected) {
                                         MaterialTheme.colorScheme.primaryContainer
@@ -390,19 +403,33 @@ fun CardSelectionDialog(
                                 )
                             ) {
                                 Row(
-                                    modifier = Modifier.padding(12.dp),
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(12.dp),
                                     verticalAlignment = Alignment.CenterVertically,
-                                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                                    horizontalArrangement = Arrangement.SpaceBetween
                                 ) {
-                                    Surface(
-                                        modifier = Modifier.size(8.dp),
-                                        shape = CircleShape,
-                                        color = city.color.toComposeColor()
-                                    ) {}
-                                    Text(
-                                        text = city.name,
-                                        style = MaterialTheme.typography.bodyMedium
-                                    )
+                                    Row(
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        horizontalArrangement = Arrangement.spacedBy(12.dp)
+                                    ) {
+                                        Surface(
+                                            modifier = Modifier.size(8.dp),
+                                            shape = CircleShape,
+                                            color = city.color.toComposeColor()
+                                        ) {}
+                                        Text(
+                                            text = city.name,
+                                            style = MaterialTheme.typography.bodyMedium
+                                        )
+                                    }
+                                    if (selected && multiSelect) {
+                                        Text(
+                                            text = "Selected",
+                                            style = MaterialTheme.typography.labelSmall,
+                                            color = MaterialTheme.colorScheme.primary
+                                        )
+                                    }
                                 }
                             }
                         }
@@ -412,8 +439,8 @@ fun CardSelectionDialog(
         },
         confirmButton = {
             TextButton(
-                onClick = { selectedCity?.let(onConfirm) },
-                enabled = selectedCity != null
+                onClick = { onConfirm(selectedCities.toList()) },
+                enabled = selectedCities.isNotEmpty()
             ) {
                 Text("Confirm")
             }
