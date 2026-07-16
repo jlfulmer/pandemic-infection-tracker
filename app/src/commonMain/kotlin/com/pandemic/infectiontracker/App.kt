@@ -41,14 +41,18 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import org.jetbrains.compose.ui.tooling.preview.Preview
 import com.pandemic.infectiontracker.ui.theme.PandemicInfectionTrackerTheme
 
 private enum class TrackerTab(val label: String) {
-    RECORD_DRAW("Record Draw"),
     DISCARD("Discard Pile"),
     DECK_TOP("On Deck Top")
+}
+
+private enum class DialogMode {
+    NONE, EPIDEMIC, DRAW
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -57,7 +61,7 @@ fun App() {
     PandemicInfectionTrackerTheme {
         var gameState by remember { mutableStateOf(GameState()) }
         var selectedTab by remember { mutableIntStateOf(0) }
-        var showEpidemicDialog by remember { mutableStateOf(false) }
+        var dialogMode by remember { mutableStateOf(DialogMode.NONE) }
         var showResetDialog by remember { mutableStateOf(false) }
 
         Scaffold(
@@ -81,8 +85,6 @@ fun App() {
                     .fillMaxSize()
                     .padding(innerPadding)
             ) {
-                SummaryBar(gameState)
-
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -97,7 +99,7 @@ fun App() {
                         )
                     )
                     Button(
-                        onClick = { showEpidemicDialog = true },
+                        onClick = { dialogMode = DialogMode.EPIDEMIC },
                         modifier = Modifier
                             .fillMaxWidth()
                             .background(brush = epidemicGradient, shape = ButtonDefaults.shape)
@@ -111,29 +113,39 @@ fun App() {
                         Text("Epidemic Event")
                     }
                 }
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp)
+                ) {
+                    Button(
+                        onClick = { dialogMode = DialogMode.DRAW },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clip(ButtonDefaults.shape),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = MaterialTheme.colorScheme.primary),
+                        contentPadding = PaddingValues()
+                    ) {
+                        Text("New City")
+                    }
+                }
 
                 TabRow(selectedTabIndex = selectedTab) {
                     TrackerTab.entries.forEachIndexed { index, tab ->
                         val count = when (tab) {
-                            TrackerTab.RECORD_DRAW -> gameState.totalDraws
                             TrackerTab.DISCARD -> gameState.inDiscard.size
                             TrackerTab.DECK_TOP -> gameState.onDeckTop.size
                         }
                         Tab(
                             selected = selectedTab == index,
                             onClick = { selectedTab = index },
-                            text = { Text("${tab.label} ($count)") }
+                            text = { Text("${tab.label}\n ($count)") }
                         )
                     }
                 }
 
                 when (TrackerTab.entries[selectedTab]) {
-                    TrackerTab.RECORD_DRAW -> RecordDrawList(
-                        gameState = gameState,
-                        onCitySelected = { cityName ->
-                            gameState = gameState.recordDraw(cityName)
-                        }
-                    )
                     TrackerTab.DISCARD -> InstanceList(
                         instances = gameState.inDiscard,
                         tab = TrackerTab.DISCARD,
@@ -152,13 +164,16 @@ fun App() {
             }
         }
 
-        if (showEpidemicDialog) {
-            EpidemicDialog(
-                discardCount = gameState.inDiscard.size,
-                onDismiss = { showEpidemicDialog = false },
-                onConfirm = { bottomCity ->
-                    gameState = gameState.epidemicEvent(bottomCity)
-                    showEpidemicDialog = false
+        if (dialogMode != DialogMode.NONE) {
+            CardSelectionDialog(
+                onDismiss = { dialogMode = DialogMode.NONE },
+                onConfirm = { cityName ->
+                    gameState = when (dialogMode) {
+                        DialogMode.EPIDEMIC -> gameState.epidemicEvent(cityName)
+                        DialogMode.DRAW -> gameState.recordDraw(cityName)
+                        else -> gameState
+                    }
+                    dialogMode = DialogMode.NONE
                 }
             )
         }
@@ -188,125 +203,6 @@ fun App() {
     }
 }
 
-@Composable
-fun SummaryBar(gameState: GameState) {
-    Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 8.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.secondaryContainer
-        )
-    ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(12.dp),
-            horizontalArrangement = Arrangement.SpaceEvenly
-        ) {
-            SummaryItem("Total Drawn", gameState.totalDraws)
-            SummaryItem("Discard", gameState.inDiscard.size)
-            SummaryItem("Deck Top", gameState.onDeckTop.size)
-        }
-    }
-}
-
-@Composable
-fun SummaryItem(label: String, count: Int) {
-    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-        Text(
-            text = count.toString(),
-            style = MaterialTheme.typography.titleLarge,
-            fontWeight = FontWeight.Bold
-        )
-        Text(
-            text = label,
-            style = MaterialTheme.typography.labelMedium
-        )
-    }
-}
-
-@OptIn(ExperimentalFoundationApi::class)
-@Composable
-fun RecordDrawList(
-    gameState: GameState,
-    onCitySelected: (String) -> Unit
-) {
-    val groupedCities = remember {
-        PandemicCities.all.groupBy { it.color }
-    }
-
-    LazyColumn(
-        contentPadding = PaddingValues(16.dp),
-        verticalArrangement = Arrangement.spacedBy(8.dp)
-    ) {
-        item {
-            Text(
-                text = "Tap a city when it is drawn from the infection deck. " +
-                    "The same city can be recorded multiple times.",
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.padding(bottom = 4.dp)
-            )
-        }
-
-        groupedCities.forEach { (color, cities) ->
-            items(cities, key = { it.name }) { city ->
-                val drawCount = gameState.drawCountFor(city.name)
-                Card(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clickable { onCitySelected(city.name) },
-                    colors = CardDefaults.cardColors(
-                        containerColor = MaterialTheme.colorScheme.surfaceContainerHigh
-                    )
-                ) {
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 16.dp, vertical = 12.dp),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(12.dp)
-                        ) {
-                            Surface(
-                                modifier = Modifier.size(12.dp),
-                                shape = CircleShape,
-                                color = city.color.toComposeColor()
-                            ) {}
-                            Text(
-                                text = city.name,
-                                style = MaterialTheme.typography.titleMedium,
-                                fontWeight = FontWeight.Medium
-                            )
-                        }
-                        Row(
-                            horizontalArrangement = Arrangement.spacedBy(8.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            if (drawCount > 0) {
-                                Text(
-                                    text = "×$drawCount",
-                                    style = MaterialTheme.typography.labelLarge,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
-                            }
-                            Text(
-                                text = "Draw",
-                                style = MaterialTheme.typography.labelLarge,
-                                color = MaterialTheme.colorScheme.primary
-                            )
-                        }
-                    }
-                }
-            }
-        }
-    }
-}
-
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 private fun InstanceList(
@@ -326,7 +222,6 @@ private fun InstanceList(
                 text = when (tab) {
                     TrackerTab.DISCARD -> "No cards in the discard pile."
                     TrackerTab.DECK_TOP -> "No cards on deck top yet."
-                    else -> ""
                 },
                 style = MaterialTheme.typography.bodyLarge,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
@@ -334,11 +229,11 @@ private fun InstanceList(
             Text(
                 text = when (tab) {
                     TrackerTab.DISCARD ->
-                        "Use Record Draw when a city is drawn, or run a Epidemic Event."
+                        "Use New City when a city is drawn, or run an Epidemic Event."
                     TrackerTab.DECK_TOP ->
-                        "Cards appear here after a epidemic event."
-                    else -> ""
+                        "Cards appear here after an epidemic event."
                 },
+                textAlign = TextAlign.Center,
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.padding(top = 8.dp)
@@ -346,8 +241,6 @@ private fun InstanceList(
         }
         return
     }
-
-    val canDrawFromTop = tab == TrackerTab.DECK_TOP
 
     LazyColumn(
         contentPadding = PaddingValues(16.dp),
@@ -358,9 +251,9 @@ private fun InstanceList(
                 text = when (tab) {
                     TrackerTab.DISCARD -> "Cities currently in the discard pile."
                     TrackerTab.DECK_TOP ->
-                        "Cities on top of the deck after a epidemic. Tap one when it is drawn."
-                    else -> ""
+                        "Cities on top of the deck after an epidemic. Tap one when it is drawn."
                 },
+                textAlign = TextAlign.Center,
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.padding(bottom = 4.dp)
@@ -457,8 +350,7 @@ private fun InstanceCard(
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
-fun EpidemicDialog(
-    discardCount: Int,
+fun CardSelectionDialog(
     onDismiss: () -> Unit,
     onConfirm: (String) -> Unit
 ) {
@@ -469,14 +361,15 @@ fun EpidemicDialog(
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Epidemic Event") },
+        title = {
+            Text (
+                text = "Select Card",
+                modifier = Modifier.fillMaxWidth(),
+                textAlign = TextAlign.Center
+            )
+        },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                Text(
-                    "1. Pick the city on the bottom of the infection deck.\n" +
-                        "2. It joins the $discardCount card(s) in the discard pile.\n" +
-                        "3. The discard pile is shuffled and placed on top of the deck."
-                )
                 LazyColumn(
                     modifier = Modifier.fillMaxWidth().weight(1f, fill = false),
                     verticalArrangement = Arrangement.spacedBy(4.dp)
