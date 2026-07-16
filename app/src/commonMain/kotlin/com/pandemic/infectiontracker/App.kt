@@ -1,6 +1,7 @@
 package com.pandemic.infectiontracker
 
 import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -44,11 +45,15 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import org.jetbrains.compose.ui.tooling.preview.Preview
 import com.pandemic.infectiontracker.ui.theme.PandemicInfectionTrackerTheme
+import org.jetbrains.compose.resources.painterResource
+import pandemic_infection_tracker.app.generated.resources.Res
+import pandemic_infection_tracker.app.generated.resources.pandemic_background
 
 private enum class TrackerTab(val label: String) {
     DISCARD("Discard Pile"),
@@ -68,157 +73,168 @@ fun App() {
         var dialogMode by remember { mutableStateOf(DialogMode.NONE) }
         var showResetDialog by remember { mutableStateOf(false) }
 
-        Scaffold(
-            topBar = {
-                CenterAlignedTopAppBar(
-                    title = {
-                        Box(contentAlignment = Alignment.Center) {
-                            // Yellow Outline
-                            Text(
-                                text = "Pandemic Infection Tracker",
-                                style = MaterialTheme.typography.titleLarge.copy(
-                                    color = Color(0xFFFFD200), // Pandemic Yellow
-                                    drawStyle = Stroke(width = 6f)
+        Box(modifier = Modifier.fillMaxSize()) {
+            Image(
+                painter = painterResource(Res.drawable.pandemic_background),
+                contentDescription = null,
+                modifier = Modifier.fillMaxSize(),
+                contentScale = ContentScale.Crop // This prevents distortion
+            )
+
+            Scaffold(
+                containerColor = Color.Transparent,
+                topBar = {
+                    CenterAlignedTopAppBar(
+                        title = {
+                            Box(contentAlignment = Alignment.Center) {
+                                // Yellow Outline
+                                Text(
+                                    text = "Pandemic Infection Tracker",
+                                    style = MaterialTheme.typography.titleLarge.copy(
+                                        color = Color(0xFFFFD200), // Pandemic Yellow
+                                        drawStyle = Stroke(width = 6f)
+                                    )
                                 )
-                            )
-                            // Red Interior
-                            Text(
-                                text = "Pandemic Infection Tracker",
-                                style = MaterialTheme.typography.titleLarge.copy(
-                                    color = Color(0xFFE21E26) // Pandemic Red
+                                // Red Interior
+                                Text(
+                                    text = "Pandemic Infection Tracker",
+                                    style = MaterialTheme.typography.titleLarge.copy(
+                                        color = Color(0xFFE21E26) // Pandemic Red
+                                    )
                                 )
-                            )
-                        }
-                    },
-                    colors = TopAppBarDefaults.topAppBarColors(
-                        containerColor = MaterialTheme.colorScheme.primaryContainer,
-                        titleContentColor = MaterialTheme.colorScheme.onPrimaryContainer
+                            }
+                        },
+                        colors = TopAppBarDefaults.topAppBarColors(
+                            containerColor = Color.Transparent,
+                            titleContentColor = MaterialTheme.colorScheme.onPrimaryContainer
+                        )
                     )
-                )
-            },
-            bottomBar = {
-                BottomAppBar(
-                    containerColor = MaterialTheme.colorScheme.primaryContainer,
-                    contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
-                    modifier = Modifier.height(48.dp),
+                },
+                bottomBar = {
+                    BottomAppBar(
+                        containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.85f),
+                        contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
+                        modifier = Modifier.height(48.dp),
+                    ) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.Center,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            TextButton(
+                                onClick = { showResetDialog = true }
+                            ) {
+                                Text("Reset")
+                            }
+                        }
+                    }
+                }
+            ) { innerPadding ->
+                Column(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(innerPadding)
                 ) {
                     Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.Center,
-                        verticalAlignment = Alignment.CenterVertically
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 16.dp, vertical = 8.dp)
                     ) {
-                        TextButton(
-                            onClick = { showResetDialog = true }
+                        val epidemicGradient = Brush.linearGradient(
+                            colors = listOf(
+                                Color(0xFF0B7519),
+                                Color(0xFF57A60F),
+                                Color(0xFF021E0F),
+                                Color(0xFF042618)
+                            )
+                        )
+                        Button(
+                            onClick = { dialogMode = DialogMode.EPIDEMIC },
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .background(brush = epidemicGradient, shape = ButtonDefaults.shape)
+                                .clip(ButtonDefaults.shape),
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = Color.Transparent,
+                                contentColor = Color(0xFFFF4444)
+                            ),
+                            contentPadding = PaddingValues()
                         ) {
-                            Text("Reset")
+                            Box(contentAlignment = Alignment.Center) {
+                                // Yellow Outline
+                                Text(
+                                    text = "Epidemic",
+                                    style = MaterialTheme.typography.labelLarge.copy(
+                                        color = Color(0xFFFFD200), // Pandemic Yellow
+                                        drawStyle = Stroke(width = 6f)
+                                    )
+                                )
+                                // Red Interior
+                                Text(
+                                    text = "Epidemic",
+                                    style = MaterialTheme.typography.labelLarge.copy(
+                                        color = Color(0xFFE21E26) // Pandemic Red
+                                    )
+                                )
+                            }
                         }
                     }
-                }
-            }
-        ) { innerPadding ->
-            Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(innerPadding)
-            ) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 16.dp, vertical = 8.dp)
-                ) {
-                    val epidemicGradient = Brush.linearGradient(
-                        colors = listOf(
-                            Color(0xFF0B7519),
-                            Color(0xFF57A60F),
-                            Color(0xFF021E0F),
-                            Color(0xFF042618)
-                        )
-                    )
-                    Button(
-                        onClick = { dialogMode = DialogMode.EPIDEMIC },
+                    Row(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .background(brush = epidemicGradient, shape = ButtonDefaults.shape)
-                            .clip(ButtonDefaults.shape),
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = Color.Transparent,
-                            contentColor = Color(0xFFFF4444)
-                        ),
-                        contentPadding = PaddingValues()
+                            .padding(start = 16.dp, end = 16.dp, bottom = 16.dp)
                     ) {
-                        Box(contentAlignment = Alignment.Center) {
-                            // Yellow Outline
+                        Button(
+                            onClick = { dialogMode = DialogMode.DRAW },
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clip(ButtonDefaults.shape),
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = MaterialTheme.colorScheme.primary),
+                            contentPadding = PaddingValues()
+                        ) {
                             Text(
-                                text = "Epidemic",
-                                style = MaterialTheme.typography.labelLarge.copy(
-                                    color = Color(0xFFFFD200), // Pandemic Yellow
-                                    drawStyle = Stroke(width = 6f)
-                                )
+                                text = "New City",
+                                style = MaterialTheme.typography.labelLarge.copy()
                             )
-                            // Red Interior
-                            Text(
-                                text = "Epidemic",
-                                style = MaterialTheme.typography.labelLarge.copy(
-                                    color = Color(0xFFE21E26) // Pandemic Red
-                                )
+
+                        }
+                    }
+
+                    TabRow(selectedTabIndex = selectedTab) {
+                        TrackerTab.entries.forEachIndexed { index, tab ->
+                            val count = when (tab) {
+                                TrackerTab.DISCARD -> gameState.inDiscard.size
+                                TrackerTab.DECK_TOP -> gameState.onDeckTop.size
+                            }
+                            Tab(
+                                selected = selectedTab == index,
+                                onClick = { selectedTab = index },
+                                text = { Text("${tab.label}\n ($count)") }
                             )
                         }
                     }
-                }
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 16.dp)
-                ) {
-                    Button(
-                        onClick = { dialogMode = DialogMode.DRAW },
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clip(ButtonDefaults.shape),
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = MaterialTheme.colorScheme.primary),
-                        contentPadding = PaddingValues()
-                    ) {
-                        Text(
-                            text = "New City",
-                            style = MaterialTheme.typography.labelLarge.copy()
+
+                    when (TrackerTab.entries[selectedTab]) {
+                        TrackerTab.DISCARD -> InstanceList(
+                            instances = gameState.inDiscard,
+                            tab = TrackerTab.DISCARD,
+                            onInstanceClick = { instanceId ->
+                                gameState = gameState.removeFromDiscard(instanceId)
+                            }
                         )
-
-                    }
-                }
-
-                TabRow(selectedTabIndex = selectedTab) {
-                    TrackerTab.entries.forEachIndexed { index, tab ->
-                        val count = when (tab) {
-                            TrackerTab.DISCARD -> gameState.inDiscard.size
-                            TrackerTab.DECK_TOP -> gameState.onDeckTop.size
-                        }
-                        Tab(
-                            selected = selectedTab == index,
-                            onClick = { selectedTab = index },
-                            text = { Text("${tab.label}\n ($count)") }
+                        TrackerTab.DECK_TOP -> InstanceList(
+                            instances = gameState.onDeckTop,
+                            tab = TrackerTab.DECK_TOP,
+                            onInstanceClick = { instanceId ->
+                                gameState = gameState.drawFromTop(instanceId)
+                            }
                         )
                     }
-                }
-
-                when (TrackerTab.entries[selectedTab]) {
-                    TrackerTab.DISCARD -> InstanceList(
-                        instances = gameState.inDiscard,
-                        tab = TrackerTab.DISCARD,
-                        onInstanceClick = { instanceId ->
-                            gameState = gameState.removeFromDiscard(instanceId)
-                        }
-                    )
-                    TrackerTab.DECK_TOP -> InstanceList(
-                        instances = gameState.onDeckTop,
-                        tab = TrackerTab.DECK_TOP,
-                        onInstanceClick = { instanceId ->
-                            gameState = gameState.drawFromTop(instanceId)
-                        }
-                    )
                 }
             }
         }
+
 
         if (dialogMode != DialogMode.NONE) {
             CardSelectionDialog(
@@ -447,7 +463,7 @@ fun CardSelectionDialog(
                     modifier = Modifier.fillMaxWidth().weight(1f, fill = false),
                     verticalArrangement = Arrangement.spacedBy(4.dp)
                 ) {
-                    groupedCities.forEach { (color, cities) ->
+                    groupedCities.forEach { (_, cities) ->
                         items(cities, key = { it.name }) { city ->
                             val count = selectedCities.count { it == city.name }
                             val selected = count > 0

@@ -35,7 +35,7 @@ fun getPandemicTypography(): Typography {
         titleLarge = TextStyle(
             fontFamily = pandemicFont,
             fontWeight = FontWeight.Bold,
-            fontSize = 28.sp,
+            fontSize = 32.sp,
             letterSpacing = 0.sp
         ),
         titleMedium = TextStyle(
