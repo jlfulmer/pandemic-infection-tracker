@@ -34,9 +34,11 @@ fun PandemicInfectionTrackerTheme(
     content: @Composable () -> Unit
 ) {
     val colors = if (darkTheme) DarkColors else LightColors
+    val typography = getPandemicTypography()
 
     MaterialTheme(
         colorScheme = colors,
+        typography = typography,
         content = content
     )
 }
