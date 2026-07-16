@@ -360,7 +360,7 @@ fun CardSelectionDialog(
     onDismiss: () -> Unit,
     onConfirm: (List<String>) -> Unit
 ) {
-    var selectedCities by remember { mutableStateOf(emptySet<String>()) }
+    var selectedCities by remember { mutableStateOf(emptyList<String>()) }
     val groupedCities = remember {
         PandemicCities.all.groupBy { it.color }
     }
@@ -369,7 +369,18 @@ fun CardSelectionDialog(
         onDismissRequest = onDismiss,
         title = {
             Text (
-                text = if (multiSelect) "Select Cards" else "Select Card",
+                text = if (multiSelect) {
+                    "Select Cards"
+                } else {
+                    "1. Pick the city on the bottom of the infection deck.\n" +
+                            "2. It joins the card(s) in the discard pile.\n" +
+                            "3. The discard pile is shuffled and placed on top of the deck."
+                },
+                style = if (multiSelect) {
+                    MaterialTheme.typography.headlineSmall
+                } else {
+                    MaterialTheme.typography.bodyMedium
+                },
                 modifier = Modifier.fillMaxWidth(),
                 textAlign = TextAlign.Center
             )
@@ -382,16 +393,16 @@ fun CardSelectionDialog(
                 ) {
                     groupedCities.forEach { (color, cities) ->
                         items(cities, key = { it.name }) { city ->
-                            val selected = selectedCities.contains(city.name)
+                            val count = selectedCities.count { it == city.name }
+                            val selected = count > 0
                             Card(
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .clickable {
                                         selectedCities = if (multiSelect) {
-                                            if (selected) selectedCities - city.name
-                                            else selectedCities + city.name
+                                            selectedCities + city.name
                                         } else {
-                                            setOf(city.name)
+                                            listOf(city.name)
                                         }
                                     },
                                 colors = CardDefaults.cardColors(
@@ -424,11 +435,17 @@ fun CardSelectionDialog(
                                         )
                                     }
                                     if (selected && multiSelect) {
-                                        Text(
-                                            text = "Selected",
-                                            style = MaterialTheme.typography.labelSmall,
-                                            color = MaterialTheme.colorScheme.primary
-                                        )
+                                        Row(
+                                            verticalAlignment = Alignment.CenterVertically,
+                                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                        ) {
+                                            Text(
+                                                text = "x$count",
+                                                style = MaterialTheme.typography.labelMedium,
+                                                fontWeight = FontWeight.Bold,
+                                                color = MaterialTheme.colorScheme.primary
+                                            )
+                                        }
                                     }
                                 }
                             }
@@ -439,7 +456,7 @@ fun CardSelectionDialog(
         },
         confirmButton = {
             TextButton(
-                onClick = { onConfirm(selectedCities.toList()) },
+                onClick = { onConfirm(selectedCities) },
                 enabled = selectedCities.isNotEmpty()
             ) {
                 Text("Confirm")
