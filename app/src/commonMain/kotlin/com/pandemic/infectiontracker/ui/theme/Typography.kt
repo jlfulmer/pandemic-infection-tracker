@@ -49,11 +49,16 @@ fun getPandemicTypography(): Typography {
             fontSize = 16.sp,
             letterSpacing = 0.25.sp
         ),
-        labelMedium = TextStyle(
+        labelLarge = TextStyle(
             fontFamily = buttonFont,
             fontWeight = FontWeight.Bold,
             fontSize = 24.sp,
             letterSpacing = 0.sp
+        ),
+        labelMedium = TextStyle(
+            fontFamily = buttonFont,
+            fontSize = 16.sp,
+            letterSpacing = 0.25.sp
         ),
     )
 }

@@ -150,7 +150,7 @@ fun App() {
                             // Yellow Outline
                             Text(
                                 text = "Epidemic",
-                                style = MaterialTheme.typography.labelMedium.copy(
+                                style = MaterialTheme.typography.labelLarge.copy(
                                     color = Color(0xFFFFD200), // Pandemic Yellow
                                     drawStyle = Stroke(width = 6f)
                                 )
@@ -158,7 +158,7 @@ fun App() {
                             // Red Interior
                             Text(
                                 text = "Epidemic",
-                                style = MaterialTheme.typography.labelMedium.copy(
+                                style = MaterialTheme.typography.labelLarge.copy(
                                     color = Color(0xFFE21E26) // Pandemic Red
                                 )
                             )
@@ -181,7 +181,7 @@ fun App() {
                     ) {
                         Text(
                             text = "New City",
-                            style = MaterialTheme.typography.labelMedium.copy()
+                            style = MaterialTheme.typography.labelLarge.copy()
                         )
 
                     }
@@ -401,7 +401,7 @@ private fun InstanceCard(
                     } else {
                         "Remove"
                     },
-                    style = MaterialTheme.typography.labelLarge,
+                    style = MaterialTheme.typography.labelMedium,
                     color = MaterialTheme.colorScheme.primary
                 )
             }
