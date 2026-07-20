@@ -345,13 +345,14 @@ private fun InstanceList(
             groupedByStack.forEach { entry ->
                 val level = entry.key
                 val stackInstances = entry.value
-                stickyHeader {
+                item {
                     Surface(
                         modifier = Modifier.fillMaxWidth(),
-                        color = MaterialTheme.colorScheme.surface
+                        color = Color(0xFF57A60F)
                     ) {
                         Text(
                             text = "Epidemic $level",
+                            textAlign = TextAlign.Center,
                             style = MaterialTheme.typography.labelLarge,
                             fontWeight = FontWeight.Bold,
                             color = MaterialTheme.colorScheme.primary,

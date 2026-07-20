@@ -8,7 +8,7 @@ data class City(val name: String, val color: CityColor)
 
 object PandemicCities {
     val all: List<City> = listOf(
-        City("Atananarivo", CityColor.BLACK),
+        City("Antananarivo", CityColor.BLACK),
         City("Atlanta", CityColor.BLUE),
         City("Baghdad", CityColor.BLACK),
         City("Bangkok", CityColor.RED),
@@ -17,6 +17,7 @@ object PandemicCities {
         City("Cairo", CityColor.BLACK),
         City("Chicago", CityColor.BLUE),
         City("Dar es Salaam", CityColor.YELLOW),
+        City("Delhi", CityColor.BLACK),
         City("Denver", CityColor.BLUE),
         City("Frankfurt", CityColor.BLUE),
         City("Ho Chi Minh City", CityColor.RED),
@@ -24,9 +25,9 @@ object PandemicCities {
         City("Istanbul", CityColor.BLACK),
         City("Jacksonville", CityColor.YELLOW),
         City("Jakarta", CityColor.RED),
-        City("Johannesburg", CityColor.BLACK),
-        City("Khartoum", CityColor.BLACK),
-        City("Kinshasa", CityColor.BLACK),
+        City("Johannesburg", CityColor.BLUE),
+        City("Khartoum", CityColor.YELLOW),
+        City("Kinshasa", CityColor.YELLOW),
         City("Kolkata", CityColor.BLACK),
         City("Lagos", CityColor.YELLOW),
         City("Lima", CityColor.YELLOW),
@@ -44,6 +45,7 @@ object PandemicCities {
         City("São Paulo", CityColor.YELLOW),
         City("Shanghai", CityColor.RED),
         City("St. Petersburg", CityColor.BLUE),
+        City("Tehran", CityColor.BLACK),
         City("Tripoli", CityColor.BLACK),
         City("Utopia", CityColor.RED),
         City("Washington", CityColor.BLUE),
