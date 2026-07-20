@@ -1,10 +1,18 @@
-import org.jetbrains.kotlin.gradle.targets.js.webpack.KotlinWebpackConfig
+@file:OptIn(ExperimentalWasmDsl::class, ExperimentalKotlinGradlePluginApi::class)
+
+import org.jetbrains.kotlin.gradle.ExperimentalKotlinGradlePluginApi
+import org.jetbrains.kotlin.gradle.ExperimentalWasmDsl
 
 plugins {
     alias(libs.plugins.kotlinMultiplatform)
     alias(libs.plugins.androidApplication)
     alias(libs.plugins.jetbrainsCompose)
     alias(libs.plugins.compose.compiler)
+}
+
+compose.resources {
+    publicResClass = true
+    packageOfResClass = "com.pandemic.infectiontracker.generated.resources"
 }
 
 kotlin {
@@ -42,7 +50,7 @@ kotlin {
 
 android {
     namespace = "com.pandemic.infectiontracker"
-    compileSdk = 35
+    compileSdk = 37
 
     sourceSets["main"].manifest.srcFile("src/main/AndroidManifest.xml")
     sourceSets["main"].res.srcDirs("src/main/res")

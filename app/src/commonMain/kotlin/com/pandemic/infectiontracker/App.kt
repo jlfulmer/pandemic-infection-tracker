@@ -52,8 +52,8 @@ import androidx.compose.ui.unit.dp
 import org.jetbrains.compose.ui.tooling.preview.Preview
 import com.pandemic.infectiontracker.ui.theme.PandemicInfectionTrackerTheme
 import org.jetbrains.compose.resources.painterResource
-import pandemic_infection_tracker.app.generated.resources.Res
-import pandemic_infection_tracker.app.generated.resources.pandemic_background
+import com.pandemic.infectiontracker.generated.resources.Res
+import com.pandemic.infectiontracker.generated.resources.pandemic_background
 
 private enum class TrackerTab(val label: String) {
     DISCARD("Discard Pile"),

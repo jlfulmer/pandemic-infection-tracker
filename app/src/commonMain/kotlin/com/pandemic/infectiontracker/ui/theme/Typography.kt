@@ -7,9 +7,9 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.sp
 import org.jetbrains.compose.resources.Font
-import pandemic_infection_tracker.app.generated.resources.Res
-import pandemic_infection_tracker.app.generated.resources.gunplay
-import pandemic_infection_tracker.app.generated.resources.helvetica_neue_condensed_bold
+import com.pandemic.infectiontracker.generated.resources.Res
+import com.pandemic.infectiontracker.generated.resources.gunplay
+import com.pandemic.infectiontracker.generated.resources.helvetica_neue_condensed_bold
 
 @Composable
 fun getPandemicFontFamily() = FontFamily(
