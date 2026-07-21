@@ -1,10 +1,14 @@
 package com.pandemic.infectiontracker
 
+import kotlinx.serialization.Serializable
+
+@Serializable
 enum class CardLocation {
     IN_DISCARD,
     ON_DECK_TOP
 }
 
+@Serializable
 data class CardInstance(
     val id: Long,
     val cityName: String,
@@ -12,17 +16,14 @@ data class CardInstance(
     val epidemicCount: Int = 0
 )
 
+@Serializable
 data class GameState(
     val instances: List<CardInstance> = emptyList(),
     val totalEpidemics: Int = 0,
-    private val nextId: Long = 1
+    val nextId: Long = 1
 ) {
     val inDiscard: List<CardInstance> = instances.filter { it.location == CardLocation.IN_DISCARD }
     val onDeckTop: List<CardInstance> = instances.filter { it.location == CardLocation.ON_DECK_TOP }
-    val totalDraws: Int = instances.size
-
-    fun drawCountFor(cityName: String): Int = instances.count { it.cityName == cityName }
-
     fun recordDraw(cityName: String): GameState {
         if (PandemicCities.all.none { it.name == cityName }) return this
 

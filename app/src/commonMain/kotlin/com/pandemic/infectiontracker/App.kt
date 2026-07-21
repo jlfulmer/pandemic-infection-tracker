@@ -35,6 +35,8 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.Saver
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -43,14 +45,16 @@ import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.unit.dp
 import org.jetbrains.compose.ui.tooling.preview.Preview
+import com.pandemic.infectiontracker.ui.theme.Dimens
 import com.pandemic.infectiontracker.ui.theme.PandemicInfectionTrackerTheme
 import org.jetbrains.compose.resources.painterResource
 import com.pandemic.infectiontracker.generated.resources.Res
 import com.pandemic.infectiontracker.generated.resources.city_button_normal
 import com.pandemic.infectiontracker.generated.resources.epidemic_button_normal
 import com.pandemic.infectiontracker.generated.resources.pandemic_background
+import kotlinx.serialization.encodeToString
+import kotlinx.serialization.json.Json
 
 private enum class TrackerTab(val label: String) {
     DISCARD("Discard Pile"),
@@ -64,11 +68,16 @@ private enum class DialogMode {
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun App() {
+    val gameStateSaver = Saver<GameState, String>(
+        save = { Json.encodeToString(it) },
+        restore = { Json.decodeFromString(it) }
+    )
+
     PandemicInfectionTrackerTheme {
-        var gameState by remember { mutableStateOf(GameState()) }
-        var selectedTab by remember { mutableIntStateOf(0) }
-        var dialogMode by remember { mutableStateOf(DialogMode.NONE) }
-        var showResetDialog by remember { mutableStateOf(false) }
+        var gameState by rememberSaveable(stateSaver = gameStateSaver) { mutableStateOf(GameState()) }
+        var selectedTab by rememberSaveable { mutableIntStateOf(0) }
+        var dialogMode by rememberSaveable { mutableStateOf(DialogMode.NONE) }
+        var showResetDialog by rememberSaveable { mutableStateOf(false) }
 
         Box(modifier = Modifier.fillMaxSize()) {
             Image(
@@ -111,7 +120,7 @@ fun App() {
                     BottomAppBar(
                         containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.85f),
                         contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
-                        modifier = Modifier.height(48.dp),
+                        modifier = Modifier.height(Dimens.BottomBarHeight),
                     ) {
                         Row(
                             modifier = Modifier.fillMaxWidth(),
@@ -135,14 +144,14 @@ fun App() {
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(horizontal = 16.dp, vertical = 8.dp),
-                        horizontalArrangement = Arrangement.spacedBy(16.dp),
+                            .padding(horizontal = Dimens.SpacingLarge, vertical = Dimens.SpacingMedium),
+                        horizontalArrangement = Arrangement.spacedBy(Dimens.SpacingLarge),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Box(
                             modifier = Modifier
                                 .weight(1f)
-                                .height(56.dp)
+                                .height(Dimens.ActionButtonHeight)
                                 .clickable(
                                     interactionSource = remember { androidx.compose.foundation.interaction.MutableInteractionSource() },
                                     indication = null
@@ -167,7 +176,7 @@ fun App() {
                         Box(
                             modifier = Modifier
                                 .weight(1f)
-                                .height(56.dp)
+                                .height(Dimens.ActionButtonHeight)
                                 .clickable(
                                     interactionSource = remember { androidx.compose.foundation.interaction.MutableInteractionSource() },
                                     indication = null
@@ -280,7 +289,7 @@ private fun InstanceList(
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(24.dp),
+                .padding(Dimens.SpacingExtraLarge),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center
         ) {
@@ -302,15 +311,15 @@ private fun InstanceList(
                 textAlign = TextAlign.Center,
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.padding(top = 8.dp)
+                modifier = Modifier.padding(top = Dimens.SpacingMedium)
             )
         }
         return
     }
 
     LazyColumn(
-        contentPadding = PaddingValues(16.dp),
-        verticalArrangement = Arrangement.spacedBy(8.dp)
+        contentPadding = PaddingValues(Dimens.SpacingLarge),
+        verticalArrangement = Arrangement.spacedBy(Dimens.CardSpacing)
     ) {
         item {
             Text(
@@ -322,7 +331,7 @@ private fun InstanceList(
                 textAlign = TextAlign.Center,
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.padding(bottom = 4.dp)
+                modifier = Modifier.padding(bottom = Dimens.SpacingSmall)
             )
         }
 
@@ -345,7 +354,7 @@ private fun InstanceList(
                             style = MaterialTheme.typography.labelLarge,
                             fontWeight = FontWeight.Bold,
                             color = MaterialTheme.colorScheme.primary,
-                            modifier = Modifier.padding(top = 8.dp, bottom = 4.dp)
+                            modifier = Modifier.padding(top = Dimens.SpacingMedium, bottom = Dimens.SpacingSmall)
                         )
                     }
                 }
@@ -378,16 +387,16 @@ private fun InstanceCard(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 12.dp),
+                .padding(horizontal = Dimens.CardPaddingHorizontal, vertical = Dimens.CardPaddingVertical),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
             Row(
                 verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(12.dp)
+                horizontalArrangement = Arrangement.spacedBy(Dimens.CardPaddingVertical)
             ) {
                 Surface(
-                    modifier = Modifier.size(12.dp),
+                    modifier = Modifier.size(Dimens.CityColorIndicatorSize),
                     shape = CircleShape,
                     color = cityColor
                 ) {}
@@ -398,7 +407,7 @@ private fun InstanceCard(
                 )
             }
             Row(
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                horizontalArrangement = Arrangement.spacedBy(Dimens.SpacingMedium),
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
@@ -448,10 +457,10 @@ fun CardSelectionDialog(
             )
         },
         text = {
-            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Column(verticalArrangement = Arrangement.spacedBy(Dimens.SpacingMedium)) {
                 LazyColumn(
                     modifier = Modifier.fillMaxWidth().weight(1f, fill = false),
-                    verticalArrangement = Arrangement.spacedBy(4.dp)
+                    verticalArrangement = Arrangement.spacedBy(Dimens.SpacingSmall)
                 ) {
                     groupedCities.forEach { (_, cities) ->
                         items(cities, key = { it.name }) { city ->
@@ -478,16 +487,16 @@ fun CardSelectionDialog(
                                 Row(
                                     modifier = Modifier
                                         .fillMaxWidth()
-                                        .padding(12.dp),
+                                        .padding(Dimens.CardPaddingVertical),
                                     verticalAlignment = Alignment.CenterVertically,
                                     horizontalArrangement = Arrangement.SpaceBetween
                                 ) {
                                     Row(
                                         verticalAlignment = Alignment.CenterVertically,
-                                        horizontalArrangement = Arrangement.spacedBy(12.dp)
+                                        horizontalArrangement = Arrangement.spacedBy(Dimens.CardPaddingVertical)
                                     ) {
                                         Surface(
-                                            modifier = Modifier.size(8.dp),
+                                            modifier = Modifier.size(Dimens.SmallIndicatorSize),
                                             shape = CircleShape,
                                             color = city.color.toComposeColor()
                                         ) {}
@@ -499,7 +508,7 @@ fun CardSelectionDialog(
                                     if (selected && multiSelect) {
                                         Row(
                                             verticalAlignment = Alignment.CenterVertically,
-                                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                            horizontalArrangement = Arrangement.spacedBy(Dimens.SpacingMedium)
                                         ) {
                                             Text(
                                                 text = "x$count",
