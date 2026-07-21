@@ -3,41 +3,15 @@ package com.pandemic.infectiontracker
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.BottomAppBar
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.CenterAlignedTopAppBar
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Surface
-import androidx.compose.material3.Tab
-import androidx.compose.material3.TabRow
-import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
-import androidx.compose.material3.TopAppBarDefaults
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.Saver
 import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -45,16 +19,13 @@ import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
-import org.jetbrains.compose.ui.tooling.preview.Preview
+import com.pandemic.infectiontracker.generated.resources.*
 import com.pandemic.infectiontracker.ui.theme.Dimens
 import com.pandemic.infectiontracker.ui.theme.PandemicInfectionTrackerTheme
-import org.jetbrains.compose.resources.painterResource
-import com.pandemic.infectiontracker.generated.resources.Res
-import com.pandemic.infectiontracker.generated.resources.city_button_normal
-import com.pandemic.infectiontracker.generated.resources.epidemic_button_normal
-import com.pandemic.infectiontracker.generated.resources.pandemic_background
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
+import org.jetbrains.compose.resources.painterResource
+import org.jetbrains.compose.ui.tooling.preview.Preview
 
 private enum class TrackerTab(val label: String) {
     DISCARD("Discard Pile"),
@@ -68,10 +39,12 @@ private enum class DialogMode {
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun App() {
-    val gameStateSaver = Saver<GameState, String>(
-        save = { Json.encodeToString(it) },
-        restore = { Json.decodeFromString(it) }
-    )
+    val gameStateSaver = remember {
+        Saver<GameState, String>(
+            save = { Json.encodeToString(it) },
+            restore = { Json.decodeFromString(it) }
+        )
+    }
 
     PandemicInfectionTrackerTheme {
         var gameState by rememberSaveable(stateSaver = gameStateSaver) { mutableStateOf(GameState()) }
@@ -79,61 +52,27 @@ fun App() {
         var dialogMode by rememberSaveable { mutableStateOf(DialogMode.NONE) }
         var showResetDialog by rememberSaveable { mutableStateOf(false) }
 
+        // Optimization: Use derivedStateOf for filtered lists to avoid re-calculating on every recomposition
+        // that doesn't affect the gameState or selectedTab.
+        val currentInstances by remember(gameState, selectedTab) {
+            derivedStateOf {
+                if (TrackerTab.entries[selectedTab] == TrackerTab.DISCARD) gameState.inDiscard else gameState.onDeckTop
+            }
+        }
+
         Box(modifier = Modifier.fillMaxSize()) {
             Image(
                 painter = painterResource(Res.drawable.pandemic_background),
                 contentDescription = null,
                 modifier = Modifier.fillMaxSize(),
-                contentScale = ContentScale.Crop // This prevents distortion
+                contentScale = ContentScale.Crop
             )
 
             Scaffold(
                 containerColor = Color.Transparent,
-                topBar = {
-                    CenterAlignedTopAppBar(
-                        title = {
-                            Box(contentAlignment = Alignment.Center) {
-                                // Yellow Outline
-                                Text(
-                                    text = "Pandemic Infection Tracker",
-                                    style = MaterialTheme.typography.titleLarge.copy(
-                                        color = Color(0xFFFFD200), // Pandemic Yellow
-                                        drawStyle = Stroke(width = 6f)
-                                    )
-                                )
-                                // Red Interior
-                                Text(
-                                    text = "Pandemic Infection Tracker",
-                                    style = MaterialTheme.typography.titleLarge.copy(
-                                        color = Color(0xFFE21E26) // Pandemic Red
-                                    )
-                                )
-                            }
-                        },
-                        colors = TopAppBarDefaults.topAppBarColors(
-                            containerColor = Color.Transparent,
-                            titleContentColor = MaterialTheme.colorScheme.onPrimaryContainer
-                        )
-                    )
-                },
+                topBar = { PandemicTopBar() },
                 bottomBar = {
-                    BottomAppBar(
-                        containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.85f),
-                        contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
-                        modifier = Modifier.height(Dimens.BottomBarHeight),
-                    ) {
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.Center,
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            TextButton(
-                                onClick = { showResetDialog = true }
-                            ) {
-                                Text("Reset")
-                            }
-                        }
-                    }
+                    PandemicBottomBar(onResetClick = { showResetDialog = true })
                 }
             ) { innerPadding ->
                 Column(
@@ -141,69 +80,18 @@ fun App() {
                         .fillMaxSize()
                         .padding(innerPadding)
                 ) {
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = Dimens.SpacingLarge, vertical = Dimens.SpacingMedium),
-                        horizontalArrangement = Arrangement.spacedBy(Dimens.SpacingLarge),
-                        verticalAlignment = Alignment.CenterVertically
+                    MainActionButtonRow(
+                        onAddCityClick = { dialogMode = DialogMode.DRAW },
+                        onEpidemicClick = { dialogMode = DialogMode.EPIDEMIC }
+                    )
+
+                    TabRow(
+                        selectedTabIndex = selectedTab,
+                        contentColor = MaterialTheme.colorScheme.primary
                     ) {
-                        Box(
-                            modifier = Modifier
-                                .weight(1f)
-                                .height(Dimens.ActionButtonHeight)
-                                .clickable(
-                                    interactionSource = remember { androidx.compose.foundation.interaction.MutableInteractionSource() },
-                                    indication = null
-                                ) { dialogMode = DialogMode.DRAW },
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Image(
-                                painter = painterResource(Res.drawable.city_button_normal),
-                                contentDescription = null,
-                                modifier = Modifier.fillMaxSize(),
-                                contentScale = ContentScale.Fit
-                            )
-
-                            Text(
-                                text = "Add City",
-                                style = MaterialTheme.typography.labelLarge.copy(
-                                    color = Color.White
-                                )
-                            )
-                        }
-
-                        Box(
-                            modifier = Modifier
-                                .weight(1f)
-                                .height(Dimens.ActionButtonHeight)
-                                .clickable(
-                                    interactionSource = remember { androidx.compose.foundation.interaction.MutableInteractionSource() },
-                                    indication = null
-                                ) { dialogMode = DialogMode.EPIDEMIC },
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Image(
-                                painter = painterResource(Res.drawable.epidemic_button_normal),
-                                contentDescription = null,
-                                modifier = Modifier.fillMaxSize(),
-                                contentScale = ContentScale.Fit
-                            )
-
-                            Text(
-                                text = "Epidemic",
-                                style = MaterialTheme.typography.labelLarge.copy(
-                                    color = Color.White
-                                )
-                            )
-                        }
-                    }
-
-                    TabRow(selectedTabIndex = selectedTab) {
                         TrackerTab.entries.forEachIndexed { index, tab ->
-                            val count = when (tab) {
-                                TrackerTab.DISCARD -> gameState.inDiscard.size
-                                TrackerTab.DECK_TOP -> gameState.onDeckTop.size
+                            val count = remember(gameState, tab) {
+                                if (tab == TrackerTab.DISCARD) gameState.inDiscard.size else gameState.onDeckTop.size
                             }
                             Tab(
                                 selected = selectedTab == index,
@@ -213,26 +101,20 @@ fun App() {
                         }
                     }
 
-                    when (TrackerTab.entries[selectedTab]) {
-                        TrackerTab.DISCARD -> InstanceList(
-                            instances = gameState.inDiscard,
-                            tab = TrackerTab.DISCARD,
-                            onInstanceClick = { instanceId ->
-                                gameState = gameState.removeFromDiscard(instanceId)
+                    InstanceList(
+                        instances = currentInstances,
+                        tab = TrackerTab.entries[selectedTab],
+                        onInstanceClick = { instanceId ->
+                            gameState = if (TrackerTab.entries[selectedTab] == TrackerTab.DISCARD) {
+                                gameState.removeFromDiscard(instanceId)
+                            } else {
+                                gameState.drawFromTop(instanceId)
                             }
-                        )
-                        TrackerTab.DECK_TOP -> InstanceList(
-                            instances = gameState.onDeckTop,
-                            tab = TrackerTab.DECK_TOP,
-                            onInstanceClick = { instanceId ->
-                                gameState = gameState.drawFromTop(instanceId)
-                            }
-                        )
-                    }
+                        }
+                    )
                 }
             }
         }
-
 
         if (dialogMode != DialogMode.NONE) {
             CardSelectionDialog(
@@ -254,31 +136,139 @@ fun App() {
         }
 
         if (showResetDialog) {
-            AlertDialog(
-                onDismissRequest = { showResetDialog = false },
-                title = { Text("Reset game?") },
-                text = { Text("All recorded draws, discard pile, and deck top tracking will be cleared.") },
-                confirmButton = {
-                    TextButton(
-                        onClick = {
-                            gameState = gameState.reset()
-                            showResetDialog = false
-                        }
-                    ) {
-                        Text("Reset")
-                    }
+            PandemicResetDialog(
+                onConfirm = {
+                    gameState = gameState.reset()
+                    showResetDialog = false
                 },
-                dismissButton = {
-                    TextButton(onClick = { showResetDialog = false }) {
-                        Text("Cancel")
-                    }
-                }
+                onDismiss = { showResetDialog = false }
             )
         }
     }
 }
 
-@OptIn(ExperimentalFoundationApi::class)
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun PandemicTopBar() {
+    CenterAlignedTopAppBar(
+        title = {
+            Box(contentAlignment = Alignment.Center) {
+                Text(
+                    text = "Pandemic Infection Tracker",
+                    style = MaterialTheme.typography.titleLarge.copy(
+                        color = Color(0xFFFFD200),
+                        drawStyle = Stroke(width = 6f)
+                    )
+                )
+                Text(
+                    text = "Pandemic Infection Tracker",
+                    style = MaterialTheme.typography.titleLarge.copy(
+                        color = Color(0xFFE21E26)
+                    )
+                )
+            }
+        },
+        colors = TopAppBarDefaults.topAppBarColors(
+            containerColor = Color.Transparent
+        )
+    )
+}
+
+@Composable
+private fun PandemicBottomBar(onResetClick: () -> Unit) {
+    BottomAppBar(
+        containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.85f),
+        contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
+        modifier = Modifier.height(Dimens.BottomBarHeight),
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.Center,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            TextButton(onClick = onResetClick) {
+                Text("Reset Game")
+            }
+        }
+    }
+}
+
+@Composable
+private fun MainActionButtonRow(
+    onAddCityClick: () -> Unit,
+    onEpidemicClick: () -> Unit
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = Dimens.SpacingLarge, vertical = Dimens.SpacingMedium),
+        horizontalArrangement = Arrangement.spacedBy(Dimens.SpacingLarge),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        ActionButton(
+            text = "Add City",
+            imageRes = Res.drawable.city_button_normal,
+            onClick = onAddCityClick,
+            modifier = Modifier.weight(1f)
+        )
+        ActionButton(
+            text = "Epidemic",
+            imageRes = Res.drawable.epidemic_button_normal,
+            onClick = onEpidemicClick,
+            modifier = Modifier.weight(1f)
+        )
+    }
+}
+
+@Composable
+private fun ActionButton(
+    text: String,
+    imageRes: org.jetbrains.compose.resources.DrawableResource,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Box(
+        modifier = modifier
+            .height(Dimens.ActionButtonHeight)
+            .clickable(
+                interactionSource = remember { MutableInteractionSource() },
+                indication = null,
+                onClick = onClick
+            ),
+        contentAlignment = Alignment.Center
+    ) {
+        Image(
+            painter = painterResource(imageRes),
+            contentDescription = null,
+            modifier = Modifier.fillMaxSize(),
+            contentScale = ContentScale.Fit
+        )
+        Text(
+            text = text,
+            style = MaterialTheme.typography.labelLarge.copy(color = Color.White)
+        )
+    }
+}
+
+@Composable
+private fun PandemicResetDialog(onConfirm: () -> Unit, onDismiss: () -> Unit) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Reset game?") },
+        text = { Text("All recorded draws, discard pile, and deck top tracking will be cleared.") },
+        confirmButton = {
+            TextButton(onClick = onConfirm) {
+                Text("Reset", color = MaterialTheme.colorScheme.error)
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text("Cancel")
+            }
+        }
+    )
+}
+
 @Composable
 private fun InstanceList(
     instances: List<CardInstance>,
@@ -286,34 +276,7 @@ private fun InstanceList(
     onInstanceClick: (Long) -> Unit
 ) {
     if (instances.isEmpty()) {
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(Dimens.SpacingExtraLarge),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center
-        ) {
-            Text(
-                text = when (tab) {
-                    TrackerTab.DISCARD -> "No cards in the discard pile."
-                    TrackerTab.DECK_TOP -> "No cards on deck top yet."
-                },
-                style = MaterialTheme.typography.bodyLarge,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-            Text(
-                text = when (tab) {
-                    TrackerTab.DISCARD ->
-                        "Use New City when a city is drawn, or run an Epidemic Event."
-                    TrackerTab.DECK_TOP ->
-                        "Cards appear here after an epidemic event."
-                },
-                textAlign = TextAlign.Center,
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.padding(top = Dimens.SpacingMedium)
-            )
-        }
+        EmptyStateView(tab)
         return
     }
 
@@ -322,17 +285,7 @@ private fun InstanceList(
         verticalArrangement = Arrangement.spacedBy(Dimens.CardSpacing)
     ) {
         item {
-            Text(
-                text = when (tab) {
-                    TrackerTab.DISCARD -> "Cities currently in the discard pile."
-                    TrackerTab.DECK_TOP ->
-                        "Cities on top of the deck after an epidemic. Tap one when it is drawn."
-                },
-                textAlign = TextAlign.Center,
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.padding(bottom = Dimens.SpacingSmall)
-            )
+            ListHeader(tab)
         }
 
         if (tab == TrackerTab.DECK_TOP) {
@@ -341,24 +294,10 @@ private fun InstanceList(
                 .sortedByDescending { it.key }
 
             groupedByStack.forEach { entry ->
-                val level = entry.key
-                val stackInstances = entry.value
                 item {
-                    Surface(
-                        modifier = Modifier.fillMaxWidth(),
-                        color = Color(0xFF57A60F)
-                    ) {
-                        Text(
-                            text = "Epidemic $level",
-                            textAlign = TextAlign.Center,
-                            style = MaterialTheme.typography.labelLarge,
-                            fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.primary,
-                            modifier = Modifier.padding(top = Dimens.SpacingMedium, bottom = Dimens.SpacingSmall)
-                        )
-                    }
+                    StackHeader(level = entry.key)
                 }
-                items(stackInstances, key = { it.id }) { instance ->
+                items(entry.value, key = { it.id }) { instance ->
                     InstanceCard(instance, onInstanceClick)
                 }
             }
@@ -367,6 +306,66 @@ private fun InstanceList(
                 InstanceCard(instance, onInstanceClick)
             }
         }
+    }
+}
+
+@Composable
+private fun EmptyStateView(tab: TrackerTab) {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(Dimens.SpacingExtraLarge),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center
+    ) {
+        Text(
+            text = if (tab == TrackerTab.DISCARD)
+                "No cards in the discard pile."
+            else
+                "No cards on deck top yet.",
+
+            style = MaterialTheme.typography.bodyLarge,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+        Text(
+            text = if (tab == TrackerTab.DISCARD) "Use Add City when a city is drawn, or run an Epidemic Event." else "Cards appear here after an epidemic event.",
+            textAlign = TextAlign.Center,
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.padding(top = Dimens.SpacingMedium)
+        )
+    }
+}
+
+@Composable
+private fun ListHeader(tab: TrackerTab) {
+    Text(
+        text = if (tab == TrackerTab.DISCARD)
+            "Cities currently in the discard pile."
+        else
+            "Cities on top of the deck after an epidemic.\nTap one when it is drawn.",
+        
+        textAlign = TextAlign.Center,
+        style = MaterialTheme.typography.bodySmall,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+        modifier = Modifier.fillMaxWidth()
+    )
+}
+
+@Composable
+private fun StackHeader(level: Int) {
+    Surface(
+        modifier = Modifier.fillMaxWidth(),
+        color = Color(0xFF57A60F)
+    ) {
+        Text(
+            text = "Epidemic $level",
+            textAlign = TextAlign.Center,
+            style = MaterialTheme.typography.labelLarge,
+            fontWeight = FontWeight.Bold,
+            color = MaterialTheme.colorScheme.primary,
+            modifier = Modifier.padding(top = Dimens.SpacingMedium, bottom = Dimens.SpacingSmall)
+        )
     }
 }
 
@@ -381,7 +380,8 @@ private fun InstanceCard(
             .fillMaxWidth()
             .clickable { onInstanceClick(instance.id) },
         colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceContainerHigh
+            containerColor = Color.White.copy(alpha = 0.7f),
+            contentColor = Color.Black
         )
     ) {
         Row(
@@ -403,23 +403,15 @@ private fun InstanceCard(
                 Text(
                     text = instance.cityName,
                     style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Medium
+                    fontWeight = FontWeight.Medium,
+                    color = Color.Black
                 )
             }
-            Row(
-                horizontalArrangement = Arrangement.spacedBy(Dimens.SpacingMedium),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text(
-                    text =  if(instance.location == CardLocation.ON_DECK_TOP) {
-                        "Draw"
-                    } else {
-                        "Remove"
-                    },
-                    style = MaterialTheme.typography.labelMedium,
-                    color = MaterialTheme.colorScheme.primary
-                )
-            }
+            Text(
+                text = if (instance.location == CardLocation.ON_DECK_TOP) "Draw" else "Remove",
+                style = MaterialTheme.typography.labelMedium,
+                color = MaterialTheme.colorScheme.primary
+            )
         }
     }
 }
@@ -432,26 +424,14 @@ fun CardSelectionDialog(
     onConfirm: (List<String>) -> Unit
 ) {
     var selectedCities by remember { mutableStateOf(emptyList<String>()) }
-    val groupedCities = remember {
-        PandemicCities.all.groupBy { it.color }
-    }
+    val groupedCities = remember { PandemicCities.all.groupBy { it.color } }
 
     AlertDialog(
         onDismissRequest = onDismiss,
         title = {
-            Text (
-                text = if (multiSelect) {
-                    "Select Cards"
-                } else {
-                    "1. Pick the city on the bottom of the infection deck.\n" +
-                            "2. It joins the card(s) in the discard pile.\n" +
-                            "3. The discard pile is shuffled and placed on top of the deck."
-                },
-                style = if (multiSelect) {
-                    MaterialTheme.typography.headlineSmall
-                } else {
-                    MaterialTheme.typography.bodyMedium
-                },
+            Text(
+                text = if (multiSelect) "Select Cards" else "1. Pick the city on the bottom of the infection deck.\n2. It joins the card(s) in the discard pile.\n3. The discard pile is shuffled and placed on top of the deck.",
+                style = if (multiSelect) MaterialTheme.typography.headlineSmall else MaterialTheme.typography.bodyMedium,
                 modifier = Modifier.fillMaxWidth(),
                 textAlign = TextAlign.Center
             )
@@ -459,67 +439,22 @@ fun CardSelectionDialog(
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(Dimens.SpacingMedium)) {
                 LazyColumn(
-                    modifier = Modifier.fillMaxWidth().weight(1f, fill = false),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .weight(1f, fill = false),
                     verticalArrangement = Arrangement.spacedBy(Dimens.SpacingSmall)
                 ) {
                     groupedCities.forEach { (_, cities) ->
                         items(cities, key = { it.name }) { city ->
                             val count = selectedCities.count { it == city.name }
-                            val selected = count > 0
-                            Card(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .clickable {
-                                        selectedCities = if (multiSelect) {
-                                            selectedCities + city.name
-                                        } else {
-                                            listOf(city.name)
-                                        }
-                                    },
-                                colors = CardDefaults.cardColors(
-                                    containerColor = if (selected) {
-                                        MaterialTheme.colorScheme.primaryContainer
-                                    } else {
-                                        MaterialTheme.colorScheme.surfaceContainerLow
-                                    }
-                                )
-                            ) {
-                                Row(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .padding(Dimens.CardPaddingVertical),
-                                    verticalAlignment = Alignment.CenterVertically,
-                                    horizontalArrangement = Arrangement.SpaceBetween
-                                ) {
-                                    Row(
-                                        verticalAlignment = Alignment.CenterVertically,
-                                        horizontalArrangement = Arrangement.spacedBy(Dimens.CardPaddingVertical)
-                                    ) {
-                                        Surface(
-                                            modifier = Modifier.size(Dimens.SmallIndicatorSize),
-                                            shape = CircleShape,
-                                            color = city.color.toComposeColor()
-                                        ) {}
-                                        Text(
-                                            text = city.name,
-                                            style = MaterialTheme.typography.bodyMedium
-                                        )
-                                    }
-                                    if (selected && multiSelect) {
-                                        Row(
-                                            verticalAlignment = Alignment.CenterVertically,
-                                            horizontalArrangement = Arrangement.spacedBy(Dimens.SpacingMedium)
-                                        ) {
-                                            Text(
-                                                text = "x$count",
-                                                style = MaterialTheme.typography.labelMedium,
-                                                fontWeight = FontWeight.Bold,
-                                                color = MaterialTheme.colorScheme.primary
-                                            )
-                                        }
-                                    }
+                            SelectionCard(
+                                city = city,
+                                selectedCount = count,
+                                multiSelect = multiSelect,
+                                onClick = {
+                                    selectedCities = if (multiSelect) selectedCities + city.name else listOf(city.name)
                                 }
-                            }
+                            )
                         }
                     }
                 }
@@ -530,19 +465,59 @@ fun CardSelectionDialog(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.Center
             ) {
-                TextButton(onClick = onDismiss) {
-                    Text("Cancel")
-                }
+                TextButton(onClick = onDismiss) { Text("Cancel") }
                 TextButton(
                     onClick = { onConfirm(selectedCities) },
                     enabled = selectedCities.isNotEmpty()
-                ) {
-                    Text("Confirm")
-                }
+                ) { Text("Confirm") }
             }
-        },
-        dismissButton = null
+        }
     )
+}
+
+@Composable
+private fun SelectionCard(
+    city: City,
+    selectedCount: Int,
+    multiSelect: Boolean,
+    onClick: () -> Unit
+) {
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick),
+        colors = CardDefaults.cardColors(
+            containerColor = if (selectedCount > 0) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceContainerLow
+        )
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(Dimens.CardPaddingVertical),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(Dimens.CardPaddingVertical)
+            ) {
+                Surface(
+                    modifier = Modifier.size(Dimens.SmallIndicatorSize),
+                    shape = CircleShape,
+                    color = city.color.toComposeColor()
+                ) {}
+                Text(text = city.name, style = MaterialTheme.typography.bodyMedium)
+            }
+            if (selectedCount > 0 && multiSelect) {
+                Text(
+                    text = "x$selectedCount",
+                    style = MaterialTheme.typography.labelMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.primary
+                )
+            }
+        }
+    }
 }
 
 private fun CityColor.toComposeColor(): Color {
