@@ -2,7 +2,6 @@ package com.pandemic.infectiontracker
 
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.Image
-import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -19,8 +18,6 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.BottomAppBar
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CenterAlignedTopAppBar
@@ -41,8 +38,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.layout.ContentScale
@@ -53,6 +48,8 @@ import org.jetbrains.compose.ui.tooling.preview.Preview
 import com.pandemic.infectiontracker.ui.theme.PandemicInfectionTrackerTheme
 import org.jetbrains.compose.resources.painterResource
 import com.pandemic.infectiontracker.generated.resources.Res
+import com.pandemic.infectiontracker.generated.resources.city_button_normal
+import com.pandemic.infectiontracker.generated.resources.epidemic_button_normal
 import com.pandemic.infectiontracker.generated.resources.pandemic_background
 
 private enum class TrackerTab(val label: String) {
@@ -138,66 +135,58 @@ fun App() {
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(horizontal = 16.dp, vertical = 8.dp)
+                            .padding(horizontal = 16.dp, vertical = 8.dp),
+                        horizontalArrangement = Arrangement.spacedBy(16.dp),
+                        verticalAlignment = Alignment.CenterVertically
                     ) {
-                        val epidemicGradient = Brush.linearGradient(
-                            colors = listOf(
-                                Color(0xFF0B7519),
-                                Color(0xFF57A60F),
-                                Color(0xFF021E0F),
-                                Color(0xFF042618)
-                            )
-                        )
-                        Button(
-                            onClick = { dialogMode = DialogMode.EPIDEMIC },
+                        Box(
                             modifier = Modifier
-                                .fillMaxWidth()
-                                .background(brush = epidemicGradient, shape = ButtonDefaults.shape)
-                                .clip(ButtonDefaults.shape),
-                            colors = ButtonDefaults.buttonColors(
-                                containerColor = Color.Transparent,
-                                contentColor = Color(0xFFFF4444)
-                            ),
-                            contentPadding = PaddingValues()
+                                .weight(1f)
+                                .height(56.dp)
+                                .clickable(
+                                    interactionSource = remember { androidx.compose.foundation.interaction.MutableInteractionSource() },
+                                    indication = null
+                                ) { dialogMode = DialogMode.DRAW },
+                            contentAlignment = Alignment.Center
                         ) {
-                            Box(contentAlignment = Alignment.Center) {
-                                // Yellow Outline
-                                Text(
-                                    text = "Epidemic",
-                                    style = MaterialTheme.typography.labelLarge.copy(
-                                        color = Color(0xFFFFD200), // Pandemic Yellow
-                                        drawStyle = Stroke(width = 6f)
-                                    )
-                                )
-                                // Red Interior
-                                Text(
-                                    text = "Epidemic",
-                                    style = MaterialTheme.typography.labelLarge.copy(
-                                        color = Color(0xFFE21E26) // Pandemic Red
-                                    )
-                                )
-                            }
-                        }
-                    }
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(start = 16.dp, end = 16.dp, bottom = 16.dp)
-                    ) {
-                        Button(
-                            onClick = { dialogMode = DialogMode.DRAW },
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .clip(ButtonDefaults.shape),
-                            colors = ButtonDefaults.buttonColors(
-                                containerColor = MaterialTheme.colorScheme.primary),
-                            contentPadding = PaddingValues()
-                        ) {
-                            Text(
-                                text = "New City",
-                                style = MaterialTheme.typography.labelLarge.copy()
+                            Image(
+                                painter = painterResource(Res.drawable.city_button_normal),
+                                contentDescription = null,
+                                modifier = Modifier.fillMaxSize(),
+                                contentScale = ContentScale.Fit
                             )
 
+                            Text(
+                                text = "Add City",
+                                style = MaterialTheme.typography.labelLarge.copy(
+                                    color = Color.White
+                                )
+                            )
+                        }
+
+                        Box(
+                            modifier = Modifier
+                                .weight(1f)
+                                .height(56.dp)
+                                .clickable(
+                                    interactionSource = remember { androidx.compose.foundation.interaction.MutableInteractionSource() },
+                                    indication = null
+                                ) { dialogMode = DialogMode.EPIDEMIC },
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Image(
+                                painter = painterResource(Res.drawable.epidemic_button_normal),
+                                contentDescription = null,
+                                modifier = Modifier.fillMaxSize(),
+                                contentScale = ContentScale.Fit
+                            )
+
+                            Text(
+                                text = "Epidemic",
+                                style = MaterialTheme.typography.labelLarge.copy(
+                                    color = Color.White
+                                )
+                            )
                         }
                     }
 
